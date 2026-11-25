@@ -1,0 +1,107 @@
+import juego.config
+import juego.coords
+import juego.estadisticas
+import juego.ia
+import juego.shell
+import juego.tablero
+import json
+import math
+import string
+
+let fallos = 0
+
+fn check(nombre, condicion):
+    if condicion:
+        print("ok   ", nombre)
+    else:
+        print("FAIL ", nombre)
+        fallos += 1
+
+fn lanza(nombre, fn_prueba):
+    let erro = false
+    try:
+        fn_prueba()
+    catch e:
+        erro = true
+    check(nombre, erro)
+
+fn mal_coord():
+    coords.parse("Z9")
+
+fn ocupadas(tab):
+    let n = 0
+    let i = 0
+    while i < len(tab.cells):
+        if tab.cells[i].ship != 0:
+            n += 1
+        i += 1
+    return n
+
+check("tablero de 64 casillas", len(tablero.crear().cells) == 64)
+check("coordenada A1", coords.parse("a1").idx == 0)
+check("coordenada H8", coords.parse("H8").idx == 63)
+check("coordenada D5", coords.parse(" D5 ").idx == 35)
+check("mostrar 0", coords.mostrar(0) == "A1")
+check("mostrar 63", coords.mostrar(63) == "H8")
+lanza("coordenada inválida", mal_coord)
+
+math.seed(1234)
+let tab = tablero.desplegar(tablero.crear())
+check("5 barcos desplegados", len(tab.ships) == 5)
+check("17 casillas ocupadas", ocupadas(tab) == 17)
+check("flota completa", tablero.terminado(tab) == false)
+
+let barco = tab.ships[0]
+let primer_idx = barco.celdas[0]
+let primer_disparo = tablero.disparar(tab, primer_idx)
+check("primer impacto", primer_disparo.resultado == "tocado" or primer_disparo.resultado == "hundido")
+check("disparo repetido", tablero.disparar(tab, primer_idx).resultado == "repetido")
+
+let k = 1
+while k < len(barco.celdas):
+    tablero.disparar(tab, barco.celdas[k])
+    k += 1
+check("barco hundido", barco.hundido)
+check("marcador de hundido", tab.cells[primer_idx].mark == config.HUNDIDO)
+
+math.seed(1234)
+let copia = tablero.desplegar(tablero.crear())
+check("despliegue reproducible", ocupadas(copia) == 17)
+check("mismo primer barco", copia.ships[0].celdas[0] == primer_idx)
+
+let cerebro = ia.crear()
+let objetivo = tablero.crear()
+let i = 0
+while i < 64:
+    let idx = cerebro.elegir(objetivo)
+    let res = tablero.disparar(objetivo, idx)
+    cerebro.observar(idx, res.resultado)
+    i += 1
+check("IA dispara 64 casillas distintas", objetivo.disparos == 64)
+
+let caza = ia.crear()
+let tab_caza = tablero.desplegar(tablero.crear())
+let eleccion = caza.elegir(tab_caza)
+tablero.disparar(tab_caza, eleccion)
+check("IA entra en modo caza", caza.observar(eleccion, "tocado") == "cazar")
+check("IA vuelve a buscar", caza.observar(eleccion, "hundido") == "buscar")
+
+let stats = { partidas = 0, victorias = 0, mejor = 0, racha = 0, mejor_racha = 0 }
+estadisticas.registrar(stats, true, 30)
+estadisticas.registrar(stats, true, 25)
+estadisticas.registrar(stats, false, 40)
+check("estadísticas registradas", stats.partidas == 3 and stats.victorias == 2)
+check("mejor partida", stats.mejor == 25)
+check("racha reiniciada", stats.racha == 0 and stats.mejor_racha == 2)
+let copia_stats = json.decode(json.encode(stats))
+check("JSON roundtrip", copia_stats.mejor == 25 and copia_stats.partidas == 3)
+let comando = shell.ejemplo()
+check("os.run desde el juego", comando.code == 0 and string.find(comando.stdout, "Luna Naval") >= 0)
+let limpieza = shell.comando_limpieza()
+check("comando de limpieza", limpieza == "clear" or limpieza == "cls")
+
+print("")
+if fallos == 0:
+    print("Todas las pruebas pasaron")
+else:
+    print(string.concat(fallos, " pruebas fallaron"))

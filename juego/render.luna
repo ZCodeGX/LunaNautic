@@ -1,0 +1,105 @@
+import juego.config
+import juego.coords
+import string
+
+pub fn titulo():
+    print(string.repeat("=", 58))
+    print("  LUNA NAVAL  ·  batalla naval por turnos en Luna")
+    print(string.repeat("=", 58))
+
+pub fn separador():
+    print(string.repeat("-", 58))
+
+fn borde():
+    return string.concat("    +", string.repeat("---+", config.SIZE))
+
+fn tablero(tablero, revelar, nombre):
+    print(string.concat(" ", nombre, "   (disparos: ", tablero.disparos, ", hundidos: ", tablero.hundidos, ")"))
+    let cabezal = "    "
+    let c = 0
+    while c < config.SIZE:
+        cabezal = string.concat(cabezal, " ", string.sub(config.COLUMNAS, c, c + 1), " ")
+        c += 1
+    print(cabezal)
+    print(borde())
+    let fila = 0
+    while fila < config.SIZE:
+        let linea = string.concat(string.pad_left(str(fila + 1), 2, " "), " |")
+        let col = 0
+        while col < config.SIZE:
+            let cell = tablero.cells[fila * config.SIZE + col]
+            let simbolo = cell.mark
+            if revelar:
+                if cell.ship != 0 and not cell.shot:
+                    simbolo = tablero.ships[cell.ship - 1].simbolo
+            linea = string.concat(linea, " ", simbolo, " |")
+            col += 1
+        print(linea)
+        fila += 1
+    print(borde())
+
+pub fn tableros(jugador, enemigo):
+    tablero(jugador, true, "TU FLOTA")
+    print("")
+    tablero(enemigo, false, "MAR ENEMIGO")
+    print("")
+
+pub fn accion(quien, idx, res, verbose):
+    if res.resultado == "repetido":
+        return
+    let lugar = coords.mostrar(idx)
+    if res.resultado == "agua":
+        if verbose:
+            print(string.concat(" ", quien, " -> ", lugar, "  agua"))
+    else:
+        if res.resultado == "tocado":
+            print(string.concat(" ", quien, " -> ", lugar, "  TOCADO (", res.nombre, ")"))
+        else:
+            if res.resultado == "hundido":
+                print(string.concat(" ", quien, " -> ", lugar, "  HUNDIDO: ", res.nombre, " (", res.size, ")"))
+
+pub fn final(gano, turnos, precision):
+    separador()
+    if gano:
+        print(string.concat("VICTORIA: flota enemiga hundida en ", turnos, " turnos (", precision, "% de aciertos)."))
+    else:
+        print(string.concat("DERROTA: tu flota fue hundida en ", turnos, " turnos (", precision, "% de aciertos)."))
+    separador()
+
+pub fn menu(stats):
+    titulo()
+    print(string.concat(" Partidas: ", stats.partidas, " | Victorias: ", stats.victorias,
+                        " | Racha: ", stats.racha, " | Mejor: ", stats.mejor))
+    print("")
+    print(" 1) Jugar")
+    print(" 2) Estadísticas")
+    print(" 3) Cómo jugar")
+    print(" 4) Salir")
+    print(" 5) Consola del sistema (os.run)")
+    print("")
+
+pub fn estadisticas(stats):
+    titulo()
+    print("")
+    print(string.concat(" Partidas jugadas:  ", stats.partidas))
+    print(string.concat(" Victorias:         ", stats.victorias))
+    print(string.concat(" Derrotas:          ", stats.partidas - stats.victorias))
+    print(string.concat(" Mejor partida:     ", stats.mejor, " turnos"))
+    print(string.concat(" Racha actual:      ", stats.racha))
+    print(string.concat(" Mejor racha:       ", stats.mejor_racha))
+    print("")
+
+pub fn ayuda():
+    titulo()
+    print("")
+    print(" Objetivo: hundir los 5 barcos enemigos antes de que hundan los tuyos.")
+    print(" Flota: Portaaviones (5), Acorazado (4), Crucero (3), Submarino (3) y Destructor (2).")
+    print(" Tu flota se despliega al azar; el enemigo elige entre casillas en damero y")
+    print(" persigue las casillas vecinas cuando acierta.")
+    print("")
+    print(" Tablero propio:  P/A/C/S/D = barco, X = impactos, # = hundido, ~ = agua.")
+    print(" Mar enemigo:     . = sin disparar, X = tocado, # = hundido, ~ = fallo.")
+    print(" Escribí coordenadas como A1, H8, C5... o 'salir' para volver al menú.")
+    print(" Probá también:   luna main.luna --demo --seed 7")
+    print(" La opción 5 usa os.run para ejecutar un comando y mostrar código y salida.")
+    print("")

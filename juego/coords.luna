@@ -1,0 +1,21 @@
+import juego.config
+import string
+
+pub fn parse(texto):
+    let s = string.upper(string.trim(texto))
+    if len(s) != 2:
+        throw string.concat("usá una coordenada como A1 (recibí: ", texto, ")")
+    let letra = string.sub(s, 0, 1)
+    let numero = string.sub(s, 1, 2)
+    let col = string.find(config.COLUMNAS, letra)
+    if col < 0:
+        throw string.concat("columna inválida: ", letra)
+    if string.find(config.FILAS, numero) < 0:
+        throw string.concat("fila inválida: ", numero)
+    let fila = int(numero) - 1
+    return { col = col, row = fila, idx = fila * config.SIZE + col }
+
+pub fn mostrar(idx):
+    let col = idx % config.SIZE
+    let fila = int(idx / config.SIZE) + 1
+    return string.concat(string.sub(config.COLUMNAS, col, col + 1), fila)

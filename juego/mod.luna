@@ -1,0 +1,9 @@
+import juego.estadisticas
+import juego.partida
+import juego.render
+import juego.shell
+
+pub let estadisticas = estadisticas
+pub let partida = partida
+pub let render = render
+pub let shell = shell

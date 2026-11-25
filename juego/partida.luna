@@ -1,0 +1,67 @@
+import juego.coords
+import juego.estadisticas
+import juego.ia
+import juego.render
+import juego.shell
+import string
+import juego.tablero
+
+fn pedir(texto):
+    let valor = input(texto)
+    if valor == nil:
+        return nil
+    return string.trim(valor)
+
+pub fn jugar(auto, stats):
+    let jugador = tablero.desplegar(tablero.crear())
+    let enemigo = tablero.desplegar(tablero.crear())
+    let cerebro = ia.crear()
+    let rival = ia.crear()
+    let turnos = 0
+    while not tablero.terminado(jugador) and not tablero.terminado(enemigo):
+        turnos += 1
+        if not auto:
+            shell.limpiar()
+            render.tableros(jugador, enemigo)
+            print(string.concat("--- Turno ", turnos, " ---"))
+        let idx = 0
+        if auto:
+            idx = cerebro.elegir(enemigo)
+        else:
+            while true:
+                let texto = pedir("Tu disparo (A1-H8, 'salir'): ")
+                if texto == nil or string.lower(texto) == "salir" or len(texto) == 0:
+                    return nil
+                let valido = false
+                try:
+                    let coord = coords.parse(texto)
+                    idx = coord.idx
+                    valido = true
+                catch e:
+                    print(string.concat(" ", e))
+                if valido:
+                    break
+        let res = tablero.disparar(enemigo, idx)
+        cerebro.observar(idx, res.resultado)
+        render.accion("TU", idx, res, not auto)
+        if tablero.terminado(enemigo):
+            break
+        let idx_ia = rival.elegir(jugador)
+        let res_ia = tablero.disparar(jugador, idx_ia)
+        rival.observar(idx_ia, res_ia.resultado)
+        render.accion("IA", idx_ia, res_ia, not auto)
+        if not auto:
+            render.tableros(jugador, enemigo)
+    let gano = tablero.terminado(enemigo)
+    let precision = 0
+    if enemigo.disparos > 0:
+        precision = int(enemigo.aciertos * 100 / enemigo.disparos)
+    if not auto:
+        shell.limpiar()
+    render.final(gano, turnos, precision)
+    if not auto:
+        render.tableros(jugador, enemigo)
+    if stats != nil:
+        estadisticas.registrar(stats, gano, turnos)
+        estadisticas.guardar(stats)
+    return gano

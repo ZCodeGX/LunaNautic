@@ -1,0 +1,107 @@
+import juego.config
+import list
+import math
+import string
+
+fn idx_de(col, row):
+    return row * config.SIZE + col
+
+fn nueva_celda():
+    return { ship = 0, shot = false, mark = config.AGUA }
+
+pub fn crear():
+    let cells = []
+    let i = 0
+    while i < config.SIZE * config.SIZE:
+        list.push(cells, nueva_celda())
+        i += 1
+    return { cells = cells, ships = [], disparos = 0, aciertos = 0, hundidos = 0 }
+
+fn cabe(cells, col, row, horizontal, size):
+    if horizontal:
+        if col + size > config.SIZE:
+            return false
+    else:
+        if row + size > config.SIZE:
+            return false
+    let k = 0
+    while k < size:
+        let c = col
+        let r = row
+        if horizontal:
+            c = col + k
+        else:
+            r = row + k
+        if cells[idx_de(c, r)].ship != 0:
+            return false
+        k += 1
+    return true
+
+fn colocar(tablero, barco):
+    let intento = 0
+    while intento < 300:
+        let horizontal = math.randint(0, 1) == 1
+        let col = math.randint(0, config.SIZE - 1)
+        let row = math.randint(0, config.SIZE - 1)
+        if cabe(tablero.cells, col, row, horizontal, barco.size):
+            let celdas = []
+            let k = 0
+            while k < barco.size:
+                let c = col
+                let r = row
+                if horizontal:
+                    c = col + k
+                else:
+                    r = row + k
+                let idx = idx_de(c, r)
+                tablero.cells[idx].ship = barco.id
+                list.push(celdas, idx)
+                k += 1
+            barco.celdas = celdas
+            return true
+        intento += 1
+    return false
+
+pub fn desplegar(tablero):
+    let id = 1
+    for def in config.FLOTA:
+        let barco = {
+            id = id,
+            nombre = def.nombre,
+            size = def.size,
+            simbolo = def.simbolo,
+            celdas = [],
+            impactos = 0,
+            hundido = false,
+        }
+        list.push(tablero.ships, barco)
+        if not colocar(tablero, barco):
+            throw string.concat("no se pudo desplegar ", def.nombre)
+        id += 1
+    return tablero
+
+pub fn disparar(tablero, idx):
+    let cell = tablero.cells[idx]
+    if cell.shot:
+        return { resultado = "repetido", nombre = "", hundido = false, size = 0 }
+    cell.shot = true
+    tablero.disparos += 1
+    if cell.ship == 0:
+        cell.mark = config.FALLO
+        return { resultado = "agua", nombre = "", hundido = false, size = 0 }
+    cell.mark = config.IMPACTO
+    let barco = tablero.ships[cell.ship - 1]
+    barco.impactos += 1
+    tablero.aciertos += 1
+    if barco.impactos >= barco.size:
+        barco.hundido = true
+        tablero.hundidos += 1
+        let k = 0
+        while k < len(barco.celdas):
+            tablero.cells[barco.celdas[k]].mark = config.HUNDIDO
+            k += 1
+        return { resultado = "hundido", nombre = barco.nombre, hundido = true, size = barco.size }
+    return { resultado = "tocado", nombre = barco.nombre, hundido = false, size = barco.size }
+
+pub fn terminado(tablero):
+    return tablero.hundidos == len(tablero.ships)

@@ -1,0 +1,64 @@
+import juego.config
+import list
+import math
+
+fn vecinos(idx):
+    let out = []
+    let col = idx % config.SIZE
+    let row = int(idx / config.SIZE)
+    if col > 0:
+        list.push(out, idx - 1)
+    if col < config.SIZE - 1:
+        list.push(out, idx + 1)
+    if row > 0:
+        list.push(out, idx - config.SIZE)
+    if row < config.SIZE - 1:
+        list.push(out, idx + config.SIZE)
+    return out
+
+pub fn crear():
+    let candidatos = []
+    let modo = "buscar"
+
+    fn rellenar(tablero):
+        let pares = []
+        let impares = []
+        let i = 0
+        while i < len(tablero.cells):
+            if not tablero.cells[i].shot:
+                let col = i % config.SIZE
+                let row = int(i / config.SIZE)
+                if (col + row) % 2 == 0:
+                    list.push(pares, i)
+                else:
+                    list.push(impares, i)
+            i += 1
+        candidatos = math.shuffle(pares)
+        list.extend(candidatos, math.shuffle(impares))
+
+    fn elegir(tablero):
+        while true:
+            if len(candidatos) == 0:
+                rellenar(tablero)
+            let idx = list.pop(candidatos)
+            if not tablero.cells[idx].shot:
+                return idx
+
+    fn observar(idx, resultado):
+        if resultado == "tocado":
+            modo = "cazar"
+            let vec = vecinos(idx)
+            let k = 0
+            while k < len(vec):
+                if not list.contains(candidatos, vec[k]):
+                    list.push(candidatos, vec[k])
+                k += 1
+        else if resultado == "hundido":
+            modo = "buscar"
+            candidatos = []
+        return modo
+
+    fn estado():
+        return modo
+
+    return { elegir = elegir, observar = observar, estado = estado }

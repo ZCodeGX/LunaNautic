@@ -1,0 +1,17 @@
+pub let SIZE = 8
+
+pub let COLUMNAS = "ABCDEFGH"
+pub let FILAS = "12345678"
+
+pub let AGUA = "."
+pub let FALLO = "~"
+pub let IMPACTO = "X"
+pub let HUNDIDO = "#"
+
+pub let FLOTA = [
+    { nombre = "Portaaviones", size = 5, simbolo = "P" },
+    { nombre = "Acorazado", size = 4, simbolo = "A" },
+    { nombre = "Crucero", size = 3, simbolo = "C" },
+    { nombre = "Submarino", size = 3, simbolo = "S" },
+    { nombre = "Destructor", size = 2, simbolo = "D" },
+]
